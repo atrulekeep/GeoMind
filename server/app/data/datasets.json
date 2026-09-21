@@ -1,0 +1,31 @@
+{
+  "datasets": [
+    {
+      "id": "beijing_districts",
+      "name": "北京市行政区边界",
+      "kind": "polygons",
+      "path": "beijing_districts.geojson",
+      "sample": false,
+      "description": "北京市 16 个区的行政区边界（来源：阿里云 DataV.GeoAtlas）",
+      "groupFields": ["name", "adcode"]
+    },
+    {
+      "id": "beijing_hospitals",
+      "name": "北京市医院点位（演示样例）",
+      "kind": "points",
+      "path": "beijing_hospitals.geojson",
+      "sample": true,
+      "description": "覆盖 16 区的 36 个知名医院点位，坐标为近似值，仅用于演示，待替换为真实数据",
+      "groupFields": ["district", "name"]
+    },
+    {
+      "id": "beijing_landmarks",
+      "name": "北京知名地标点位",
+      "kind": "points",
+      "path": "beijing_landmarks.geojson",
+      "sample": false,
+      "description": "天安门、鸟巢、水立方、天坛、中国尊、北京南站 6 个公开坐标点位，可作为三维模型的挂载锚点",
+      "groupFields": ["name", "category"]
+    }
+  ]
+}

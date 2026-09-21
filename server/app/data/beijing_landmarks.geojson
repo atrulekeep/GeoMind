@@ -1,0 +1,35 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "天安门", "category": "地标" },
+      "geometry": { "type": "Point", "coordinates": [116.397428, 39.90923] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "国家体育场（鸟巢）", "category": "地标" },
+      "geometry": { "type": "Point", "coordinates": [116.39667, 39.99278] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "国家游泳中心（水立方）", "category": "地标" },
+      "geometry": { "type": "Point", "coordinates": [116.39128, 39.99294] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "天坛祈年殿", "category": "地标" },
+      "geometry": { "type": "Point", "coordinates": [116.4124, 39.8822] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "中国尊", "category": "地标" },
+      "geometry": { "type": "Point", "coordinates": [116.4636, 39.9104] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "北京南站", "category": "交通" },
+      "geometry": { "type": "Point", "coordinates": [116.3785, 39.8654] }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+node_modules
+out
+dist
+.git
+**/__pycache__
+server/.venv
+server/.env
+server/evals/reports
+server/app/knowledge/.cache
+.DS_Store
+*.log

@@ -1,0 +1,170 @@
+[
+  {
+    "id": "kb-001",
+    "category": "workflow",
+    "title": "标准点-面统计分析工作流",
+    "tags": ["聚合", "点", "面", "统计", "sjoin", "count", "工作流"],
+    "text": "需求形如『每个区有多少个X（医院/学校/POI）』时的标准工具链：1) list_datasets 确认点、面数据集 id 与面数据分组字段；2) 必要时 describe_dataset 核对字段名；3) aggregate_points_by_region（pointsId=点, polygonsId=面, groupField=面数据字段，通常是 name）做空间连接计数；4) 将返回 counts 原样放入 render_scene 图层的 metricValues，metricGroupField 与 groupField 一致，metricName 用英文标识如 hospital_count。不要自己编造或推算数值，所有数字只能来自工具返回。"
+  },
+  {
+    "id": "kb-002",
+    "category": "analysis",
+    "title": "密度与归一化：不要只展示绝对计数",
+    "tags": ["密度", "归一化", "密度图", "人均", "面积", "density"],
+    "text": "当用户说『密度』『分布是否合理』『公平性/可达性对比』时，绝对计数会误导（大区天然点多）。应做归一化：密度 = 计数 / 区域面积（平方公里），或人均 = 计数 / 人口。当前工具只返回计数，因此在回复中必须明确说明『三维柱高为绝对数量，未做面积/人口归一化，大区偏高属正常』，并建议用户提供人口/面积字段后再做归一化分析。不要假装已经计算了密度。"
+  },
+  {
+    "id": "kb-003",
+    "category": "scene-recipe",
+    "title": "heightScale 高度缩放参数选择",
+    "tags": ["heightScale", "缩放", "高度", "三维柱", "拉伸", "参数"],
+    "text": "polygon-extrusion 的实际柱高(米) = 指标值 × heightScale。选择经验值：指标是个位数~几十的计数 → 300~1000（如医院数 0~8 用 600）；指标是上百的计数 → 30~100；指标是比率/百分比（0~1）→ 3000~10000；指标是金额等大数 → 先换算成万元/亿元单位再给小 scale。目标是让最高柱约 1000~6000 米，在市级视角清晰可见又不至于穿出大气层。一个场景中同一指标的多个图层必须用相同 heightScale 才能横向比较。"
+  },
+  {
+    "id": "kb-004",
+    "category": "scene-recipe",
+    "title": "配色与透明度选择",
+    "tags": ["颜色", "配色", "color", "透明度", "十六进制", "ARGB"],
+    "text": "颜色格式为 #RRGGBB 或 #RRGGBBAA（AA 为十六进制透明度）。建议：面填色 polygon-fill 用半透明 #3FA7E699 或 #8FB8DE99；拉伸体 polygon-extrusion 可用实色（渲染器自动加 0.9 alpha）如 #3FA7E6，相邻柱需要区分时用同色系；点位用高饱和暖色 #E4572E / #FFD166 与冷色底图形成对比；卫星影像底图上用亮色 #FFD166、#4ADE80。同一语义的图层跨轮次要保持颜色一致。避免给相邻面用完全随机的高饱和色。"
+  },
+  {
+    "id": "kb-005",
+    "category": "workflow",
+    "title": "挂载 glTF 三维模型的正确流程",
+    "tags": ["gltf", "glb", "模型", "model", "gltf-model", "锚点", "nameValue"],
+    "text": "在某个地点放三维模型（人物/车辆/建筑示意）：1) list_datasets 的返回里同时给出 models 可用模型清单与 id；2) describe_dataset 查看锚点点数据集（如 beijing_landmarks）的 name 字段确切取值；3) render_scene 加 kind=gltf-model 图层，必填 modelId（来自 models 清单）、datasetId（锚点点数据）、nameValue（与点要素 name 完全一致，全角括号也要一致）；4) scale 未指定时取模型 defaultScale（人物/车辆=1，box=50），大视角看不清可放大到 20~50；5) 人物模型 cesium_man 带行走动画。严禁凭记忆拼写地名，名称对不上时工具会返回全部可选名。"
+  },
+  {
+    "id": "kb-006",
+    "category": "analysis",
+    "title": "缓冲区分析（buffer）的需求识别与现状边界",
+    "tags": ["buffer", "缓冲区", "半径", "附近", "一公里", "周边", "覆盖"],
+    "text": "用户说『某点 X 公里内有什么』『沿线路两侧 500 米』『服务覆盖范围』时，GIS 上对应 buffer（缓冲区）+ 空间相交分析。当前工具集尚未提供 buffer 工具，不要假装做过。应如实告知：目前支持点落面聚合统计与场景渲染，缓冲区/邻近分析是下一步能力；可以先用 render_scene 把相关点和面都画出来作为定性展示，并在回复中说明这只是可视化叠加、不是精确缓冲分析。"
+  },
+  {
+    "id": "kb-007",
+    "category": "tool-usage",
+    "title": "多轮场景合并（merge）与 replaceScene 语义",
+    "tags": ["replaceScene", "合并", "多轮", "patch", "增量", "清空", "merge"],
+    "text": "render_scene 默认 merge 模式：提交的图层按 id 匹配——同 id 替换、新 id 追加、未提及的图层与当前底图/地形全部保留。用户说『再加上/叠加/换成 X 的颜色（同一图层调样式）』时用 merge，并复用既有图层 id。只有用户明确表达『清空/不要XX了/全部换成/重新来』时才 replaceScene=true 全量重建。底图 basemap 和地形 terrain 只在用户明确要求时传值，不传则保持现状。cameraDatasetId 每轮可独立指定，不影响图层合并。"
+  },
+  {
+    "id": "kb-008",
+    "category": "tool-usage",
+    "title": "底图与地形选择",
+    "tags": ["底图", "地形", "basemap", "terrain", "卫星", "影像", "arcgis", "osm", "高德"],
+    "text": "basemap 可选：gaode（高德矢量，默认，国内加载快、中文注记）、osm（OpenStreetMap，国际通用、细节多但国内慢）、arcgis-satellite（ArcGIS 卫星影像，展示真实地貌与三维模型时最佳）。terrain 可选：flat（椭球平面，默认，统计柱图建议用平面以免柱体与地形穿插）、arcgis（ArcGIS 全球地形，展示山区/模型贴地时开启）。组合建议：看三维柱状统计 → gaode+flat；看模型与真实环境 → arcgis-satellite+arcgis。切换底图/地形属于场景 patch，不需要重建图层。"
+  },
+  {
+    "id": "kb-009",
+    "category": "data",
+    "title": "坐标系 EPSG:4326 与数据接入要求",
+    "tags": ["坐标系", "EPSG", "4326", "WGS84", "CRS", "经纬度", "投影"],
+    "text": "GeoMind 内部统一使用 EPSG:4326（WGS84 经纬度），注册中心加载任何矢量数据时会自动把其它 CRS 转换到 4326。向同事/用户索要数据时必须确认坐标系编号：常见有 EPSG:4326（经纬度）、EPSG:3857（Web 墨卡托，米）、CGCS2000 高斯-克吕格分带（如 EPSG:4547/4549）。没有坐标系信息的数据无法正确定位。坐标顺序在 GeoJSON 中固定为 [经度, 纬度]，高度单位为米。"
+  },
+  {
+    "id": "kb-0010",
+    "category": "data",
+    "title": "样例数据的可信度边界",
+    "tags": ["样例", "sample", "演示数据", "医院", "近似", "真实数据", "免责"],
+    "text": "beijing_hospitals 是手工编造的 36 个近似坐标（datasets 清单中 sample=true），只能演示链路，不能用于真实结论，回复中涉及具体数字时必须提示『演示样例数据』。beijing_districts 是 DataV 官方区划边界，可信。beijing_landmarks 是公开知名地标坐标，可信。看到 sample=true 的数据集时，主动在结论中声明数据性质，避免用户把演示数字当真。"
+  },
+  {
+    "id": "kb-011",
+    "category": "troubleshooting",
+    "title": "工具返回 error 的自纠模式",
+    "tags": ["error", "错误", "自纠", "重试", "字段名", "数据集不存在", "排查"],
+    "text": "dispatch 对所有工具异常做了捕获并把 {error: 类型: 原因} 作为工具结果喂回，这不是崩溃，要读原因自纠：①『数据集不存在』→ 重新 list_datasets 拿准确 id；②『不存在字段 X，可选：[...]』→ 从可选列表里挑字段，通常面数据分组用 name；③『未找到 name=... 的点，可选：[...]』→ 从可选名称里选完全一致的；④『提供 metricValues 时必须 metricGroupField』→ 补齐成对参数。同一错误不要原样重试超过一次，两次失败就在回复中向用户说明卡在哪。"
+  },
+  {
+    "id": "kb-012",
+    "category": "tool-usage",
+    "title": "metricValues 指标注入机制",
+    "tags": ["metricValues", "metricGroupField", "metricName", "指标", "注入", "数值映射"],
+    "text": "render_scene 不接受你修改过的 GeoJSON，只接受数据集 id + 指标表。机制：metricValues=[{group, value}] 按 metricGroupField（要素上的字段，如区名 name）把 value 映射进每个要素的新属性 metricName；polygon-extrusion 用该属性 × heightScale 做柱高。关键约束：metricGroupField 必须是要素真实存在的字段；group 取值必须与该字段值逐字一致（aggregate 返回的 group 可直接用）；一次聚合的结果要完整传入（包括 0 值的区，缺省会按 0 处理但应显式传全）。"
+  },
+  {
+    "id": "kb-013",
+    "category": "workflow",
+    "title": "视角（camera）控制策略",
+    "tags": ["相机", "视角", "camera", "cameraDatasetId", "fly_to", "飞行", "缩放"],
+    "text": "视角由数据范围自动计算，不需要也不能手写经纬度。render_scene 的 cameraDatasetId 指定对准哪个数据集的整体范围（市级统计用区划面，单点模型用锚点点集）。用户事后说『飞过去/放大看/视角对准X』时调用 fly_to（参数 datasetId）。点数据集范围很小时自动给 3000 米最低高度。多个图层时优先对准面数据集以容纳全部内容；用户只要求看某个地标时，fly_to 传该锚点数据集。"
+  },
+  {
+    "id": "kb-014",
+    "category": "analysis",
+    "title": "空间连接 predicate=within 的含义与边界点问题",
+    "tags": ["sjoin", "within", "空间连接", "边界", "落在边界", "归属", "predicate"],
+    "text": "aggregate_points_by_region 用 gpd.sjoin(predicate='within') 统计严格落在面内的点；恰好压在区界线上的点不会被计入任何区（matchedPoints 可能小于点总数）。若用户质疑总数对不上，解释这是边界点归属问题，并可在回复中给出 matchedPoints 与原始点数的差值。不要把未匹配点自行分摊到邻近区——那会引入无法解释的规则。"
+  },
+  {
+    "id": "kb-015",
+    "category": "scene-recipe",
+    "title": "多图层叠加的典型组合",
+    "tags": ["多图层", "叠加", "组合", "layers", "图层顺序", "点面叠加"],
+    "text": "一次 render_scene 可提交多个图层，适合的组合：①区划面填充 + 点位（polygon-fill 在下，points 在上）；②三维统计柱 + 地标参考点；③多组点数据用不同颜色区分（每层独立 color/pointSize，id 要不同）。避免：拉伸体 + 同区域填充面重叠（z-fighting 观感差）；一次提交超过 4 个图层（拆成两轮 merge 更易讲解）。图层 id 在同一轮数组内不可重复，跨轮复用 id 即替换。"
+  },
+  {
+    "id": "kb-016",
+    "category": "tool-usage",
+    "title": "点位图层参数 pointSize 与可读性",
+    "tags": ["pointSize", "点位大小", "点", "像素", "可读性", "密集"],
+    "text": "pointSize 是像素大小，默认 8。全市视角点位稀疏（几十个）用 8~12；点位密集（数百个）用 4~6 避免糊成一团；卫星底图上建议 ≥10 并配暖色。点位使用 disableDepthTestDistance 始终可见，不会被地形/建筑遮挡，因此点不适合表达精确三维位置，需要精确贴地位置时用 gltf-model 图层。"
+  },
+  {
+    "id": "kb-017",
+    "category": "workflow",
+    "title": "用户意图到图层类型的映射",
+    "tags": ["意图识别", "图表选择", "柱状图", "热力", "填色", "点位", "需求映射"],
+    "text": "意图映射表：『多少/数量/统计/对比各区』→ polygon-extrusion（三维柱）；『画出/显示边界/范围』→ polygon-fill；『标出/显示位置/在哪里』→ points；『在X处放模型/人物/车/建筑示意』→ gltf-model；『卫星/真实照片底图』→ basemap=arcgis-satellite；『地形/山/起伏』→ terrain=arcgis。用户说『热力图』时，当前没有热力栅格能力，应说明可用『按指标拉伸的三维柱』替代表达区级强度差异，不要承诺生成热力图。"
+  },
+  {
+    "id": "kb-018",
+    "category": "data",
+    "title": "3D Tiles 与 glTF/glb 的区别和接入状态",
+    "tags": ["3dtiles", "gltf", "glb", "倾斜摄影", "BIM", "城市模型", "tileset"],
+    "text": "glTF/glb 是单体模型（一个人、一栋楼、一辆车），适合点锚点挂载；3D Tiles（tileset.json）是城市级分片流式模型（倾斜摄影、BIM 园区、手工精模），两者不是一回事。GeoMind 当前 gltf-model 图层只支持单体 glb；3D Tiles 图层待同事提供数据后扩展。用户问能否加载城市倾斜摄影时，说明需要 tileset.json 目录（含 b3dm/i3dm 瓦片与坐标系信息），属于待接入能力。"
+  },
+  {
+    "id": "kb-019",
+    "category": "troubleshooting",
+    "title": "模型显示异常（看不到/太大/躺倒）的参数排查",
+    "tags": ["模型异常", "看不到模型", "scale", "朝向", "heading", "比例", "minimumPixelSize"],
+    "text": "gltf-model 常见问题：①视角里看不到 → 模型真实尺寸很小（人物约 1.8 米，市级视角不可见），调大 scale 到 20~100，渲染器有 minimumPixelSize=32 保底；②模型朝向不对 → headingDegrees 绕地心垂直轴旋转（北=0，东=90）；③模型悬在半空或埋地 → 锚点是平面坐标、地形开启时模型脚底可能与地形有偏差，属正常现象；④box 是 1×1×1 单位的示意体，defaultScale=50 表示 50 米见方，模拟建筑体量时按真实楼高设置。"
+  },
+  {
+    "id": "kb-020",
+    "category": "workflow",
+    "title": "回复的结构规范与数据结论表达",
+    "tags": ["回复规范", "总结", "结论", "表达", "数字", "汇报"],
+    "text": "完成任务后的文字总结应包含：①做了什么（调用链一句话）；②关键数据结论（从工具返回中挑 top3/极值，如西城8、朝阳6、海淀6；延庆0）；③数据性质提示（样例数据/归一化限制）；④必要的解读（中心城密集、远郊稀疏）。所有数字必须能在 traces 的工具返回里找到出处，禁止四舍五入成『约』后再做加减。markdown 简短即可，不要罗列完整 JSON。"
+  },
+  {
+    "id": "kb-021",
+    "category": "analysis",
+    "title": "时序与动态数据的边界",
+    "tags": ["时序", "时间", "动态", "轨迹", "历史对比", "动画", "trajectory"],
+    "text": "当前工具集是静态快照分析：没有时间过滤、轨迹回放、时态对比能力。用户问『过去几年变化/沿路径运动/实时数据』时，不要承诺：可先完成当前静态场景并说明能力边界。多轮里后一次 render_scene 会替换同 id 图层，因此『先看 A 指标再看 B 指标』的切换可以通过两次渲染实现，但不能同屏做时间轴动画。"
+  },
+  {
+    "id": "kb-022",
+    "category": "tool-usage",
+    "title": "describe_dataset 的使用时机",
+    "tags": ["describe_dataset", "字段", "样例", "bbox", "探测", "省 token"],
+    "text": "describe_dataset 返回要素数、字段列表、前 3 行样例属性、经纬度 bbox。使用时机：①需要 groupField/nameField 但不确定字段名（必查）；②模型挂载前确认 name 取值写法（必查）；③用户问数据覆盖范围/时间。list_datasets 已经给出 groupFields 提示且任务明确时可直接调用 aggregate，不必每条数据都 describe，以节省步数（上限 12 轮）。"
+  },
+  {
+    "id": "kb-023",
+    "category": "troubleshooting",
+    "title": "参数 JSON 格式硬约束",
+    "tags": ["JSON", "参数格式", "schema", "extra", "枚举", "严格", "非法参数"],
+    "text": "所有工具入参走 Pydantic 严格校验：①禁止传 schema 里没有的字段（extra=forbid），臆造参数会直接报错——不确定有什么参数时看工具定义而不是猜；②kind/basemap/terrain 是枚举字符串，传错值报错，可选值见工具描述；③图层数组至少 1 个；id 长度 1~64；④metricValues 是对象数组不是字典；⑤不要把坐标数组塞进任何参数，位置一律由数据集和名称解析。"
+  },
+  {
+    "id": "kb-024",
+    "category": "workflow",
+    "title": "多轮对话中的指代处理",
+    "tags": ["多轮", "指代", "上下文", "它", "这个", "换成", "接着"],
+    "text": "系统保留最近 20 条消息，用户会用代词：『再加上它们』『换成卫星图』『飞到那儿』。处理方式：从上文确定指代对象（数据集、图层 id、地名）；图层样式微调（换颜色/高度）要复用之前的图层 id 走 merge；用户说『不要XX图层』且场景里图层很少时用 replaceScene=true 重建（该操作会触发用户审批）；指代无法消解时，用一次 describe_dataset/list_datasets 澄清，而不是直接反问用户（优先自助）。"
+  }
+]

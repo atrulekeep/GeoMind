@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pydantic>=2
+httpx
+python-dotenv
+geopandas
+langgraph
+mcp>=1.0.0

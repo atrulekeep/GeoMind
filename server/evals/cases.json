@@ -1,0 +1,307 @@
+[
+  {
+    "id": "eval-01",
+    "category": "basic-render",
+    "turns": ["把北京各区的行政区划边界画出来"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["polygon-fill"],
+      "must_render_datasets": ["beijing_districts"],
+      "final_layer_count": 1
+    }
+  },
+  {
+    "id": "eval-02",
+    "category": "basic-render",
+    "turns": ["在地图上标出北京所有医院的位置"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["points"],
+      "must_render_datasets": ["beijing_hospitals"],
+      "final_layer_count": 1
+    }
+  },
+  {
+    "id": "eval-03",
+    "category": "basic-render",
+    "turns": ["显示北京地标都在哪里"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["points"],
+      "must_render_datasets": ["beijing_landmarks"]
+    }
+  },
+  {
+    "id": "eval-04",
+    "category": "basic-render",
+    "turns": ["把北京区划边界和医院点位同时显示在一个场景里"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["polygon-fill", "points"],
+      "must_render_datasets": ["beijing_districts", "beijing_hospitals"],
+      "final_layer_count": 2
+    }
+  },
+  {
+    "id": "eval-05",
+    "category": "basic-render",
+    "turns": ["同时标出医院和地标，两类点用不同颜色区分"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["points"],
+      "must_render_datasets": ["beijing_hospitals", "beijing_landmarks"],
+      "final_layer_count": 2
+    }
+  },
+  {
+    "id": "eval-06",
+    "category": "basic-render",
+    "turns": ["先显示医院点位", "把视角飞到这些数据的范围中心"],
+    "expect": {
+      "must_call": ["render_scene", "fly_to"],
+      "must_render_kinds": ["points"],
+      "camera_set": true
+    }
+  },
+  {
+    "id": "eval-07",
+    "category": "aggregation",
+    "turns": ["统计北京每个区的医院数量，用三维柱状图展示"],
+    "expect": {
+      "must_call": ["aggregate_points_by_region", "render_scene"],
+      "must_render_kinds": ["polygon-extrusion"],
+      "must_render_datasets": ["beijing_districts"],
+      "render_args_has_metric_values": true
+    }
+  },
+  {
+    "id": "eval-08",
+    "category": "aggregation",
+    "turns": ["统计每个区划内有多少家医院，结果在三维场景里用拉伸柱体表达，柱体用蓝色"],
+    "expect": {
+      "must_call": ["aggregate_points_by_region", "render_scene"],
+      "must_render_kinds": ["polygon-extrusion"],
+      "render_args_has_metric_values": true
+    }
+  },
+  {
+    "id": "eval-09",
+    "category": "aggregation",
+    "turns": ["统计完各区医院数量后，除了三维柱，再把医院原始点位也叠加到同一场景"],
+    "expect": {
+      "must_call": ["aggregate_points_by_region", "render_scene"],
+      "must_render_kinds": ["polygon-extrusion", "points"],
+      "final_layer_count": 2
+    }
+  },
+  {
+    "id": "eval-10",
+    "category": "aggregation",
+    "turns": ["先统计北京每个区的医院数量并出三维柱状图", "再把地标点位叠加进去"],
+    "expect": {
+      "must_call": ["aggregate_points_by_region", "render_scene"],
+      "must_render_kinds": ["polygon-extrusion", "points"],
+      "must_render_datasets": ["beijing_districts", "beijing_landmarks"],
+      "forbid_replace": true
+    }
+  },
+  {
+    "id": "eval-11",
+    "category": "aggregation",
+    "turns": [
+      "统计北京每个区的医院数量，出三维柱状图",
+      "图先不用动，单独把视角飞到区划数据范围"
+    ],
+    "expect": {
+      "must_call": ["aggregate_points_by_region", "render_scene", "fly_to"],
+      "camera_set": true
+    }
+  },
+  {
+    "id": "eval-12",
+    "category": "aggregation",
+    "turns": ["帮我统计北京每个区分别有多少家医院，先不急着出图，直接用文字告诉我结果"],
+    "expect": {
+      "must_call": ["aggregate_points_by_region"],
+      "forbid_call": ["render_scene"],
+      "reply_contains": ["区"]
+    }
+  },
+  {
+    "id": "eval-13",
+    "category": "aggregation",
+    "turns": ["统计各区医院数量，用三维柱展示，柱高整体放大一点让对比更明显"],
+    "expect": {
+      "must_call": ["aggregate_points_by_region", "render_scene"],
+      "must_render_kinds": ["polygon-extrusion"]
+    }
+  },
+  {
+    "id": "eval-14",
+    "category": "aggregation",
+    "turns": ["北京各区医院数三维柱图", "把柱状图的颜色换成绿色，其他不要动"],
+    "expect": {
+      "must_call": ["aggregate_points_by_region", "render_scene"],
+      "must_render_kinds": ["polygon-extrusion"],
+      "final_layer_count": 1,
+      "forbid_replace": true
+    }
+  },
+  {
+    "id": "eval-15",
+    "category": "model",
+    "turns": ["在鸟巢放一个三维人物模型"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["gltf-model"],
+      "render_args_contains": ["cesium_man", "国家体育场（鸟巢）"]
+    }
+  },
+  {
+    "id": "eval-16",
+    "category": "model",
+    "turns": ["在水立方的位置放一辆车的三维模型"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["gltf-model"],
+      "render_args_contains": ["ground_vehicle", "水立方"]
+    }
+  },
+  {
+    "id": "eval-17",
+    "category": "model",
+    "turns": ["先显示北京地标点位", "再在天安门的位置放一个人物模型，原来的点位要保留"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["points", "gltf-model"],
+      "forbid_replace": true
+    }
+  },
+  {
+    "id": "eval-18",
+    "category": "model",
+    "turns": ["在天坛放一个人物模型，模型放大到 30 倍，视角对准地标"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["gltf-model"],
+      "render_args_contains": ["天坛", "cesium_man"]
+    }
+  },
+  {
+    "id": "eval-19",
+    "category": "basemap-terrain",
+    "turns": ["显示医院点位，底图换成卫星影像"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["points"],
+      "final_basemap": "arcgis-satellite"
+    }
+  },
+  {
+    "id": "eval-20",
+    "category": "basemap-terrain",
+    "turns": ["标出地标位置，并开启 ArcGIS 三维地形"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "final_terrain": "arcgis"
+    }
+  },
+  {
+    "id": "eval-21",
+    "category": "basemap-terrain",
+    "turns": ["把地标点位放到卫星影像加三维地形的环境里展示"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "final_basemap": "arcgis-satellite",
+      "final_terrain": "arcgis"
+    }
+  },
+  {
+    "id": "eval-22",
+    "category": "basemap-terrain",
+    "turns": ["先出各区医院数量三维柱", "底图切换成卫星影像，图层保持不变"],
+    "expect": {
+      "must_call": ["aggregate_points_by_region", "render_scene"],
+      "must_render_kinds": ["polygon-extrusion"],
+      "final_basemap": "arcgis-satellite",
+      "forbid_replace": true
+    }
+  },
+  {
+    "id": "eval-23",
+    "category": "patch",
+    "turns": ["先画出区划边界", "再叠加医院点位，不要动边界"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["polygon-fill", "points"],
+      "final_layer_count": 2,
+      "forbid_replace": true
+    }
+  },
+  {
+    "id": "eval-24",
+    "category": "patch",
+    "turns": ["显示地标点位", "视角飞到地标范围"],
+    "expect": {
+      "must_call": ["render_scene", "fly_to"]
+    }
+  },
+  {
+    "id": "eval-25",
+    "category": "patch",
+    "turns": ["先显示医院点位", "全部清空，场景里只保留区划边界"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["polygon-fill"],
+      "must_replace": true,
+      "final_layer_count": 1
+    }
+  },
+  {
+    "id": "eval-26",
+    "category": "patch",
+    "turns": ["显示区划边界和医院点位", "把医院点位的颜色改成红色，其他不变"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["polygon-fill", "points"],
+      "final_layer_count": 2,
+      "forbid_replace": true
+    }
+  },
+  {
+    "id": "eval-27",
+    "category": "robustness",
+    "turns": ["把 beijing_hospital（医院点数据）的分布画出来"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["points"]
+    }
+  },
+  {
+    "id": "eval-28",
+    "category": "robustness",
+    "turns": ["我想看北京医院分布的热力图"],
+    "expect": {
+      "must_call": ["aggregate_points_by_region", "render_scene"],
+      "must_render_kinds": ["polygon-extrusion"]
+    }
+  },
+  {
+    "id": "eval-29",
+    "category": "robustness",
+    "turns": ["分析北京每个区医院的空间密度，用三维图展示"],
+    "expect": {
+      "must_call": ["aggregate_points_by_region", "render_scene"],
+      "must_render_kinds": ["polygon-extrusion"],
+      "reply_contains": ["归一化"]
+    }
+  },
+  {
+    "id": "eval-30",
+    "category": "robustness",
+    "turns": ["帮我分析每个地标一公里范围内有多少医院"],
+    "expect": {
+      "reply_contains": ["缓冲"]
+    }
+  }
+]
