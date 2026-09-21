@@ -46,6 +46,10 @@ export async function resetSession(): Promise<void> {
   await fetch(`${BASE}/api/session/reset`, { method: 'POST' })
 }
 
+export function getExportUrl(): string {
+  return `${BASE}/api/scene/export`
+}
+
 export async function submitApproval(
   runId: string,
   approved: boolean,

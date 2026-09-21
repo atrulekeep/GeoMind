@@ -8,6 +8,11 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# 禁用 git 分页器：否则 git diff 在交互终端会打开 less 等待按 q，
+# 在 LESS=-R（无 -F 自动退出）时即使内容不足一屏也会表现为"卡住"
+export GIT_PAGER=cat
+export PAGER=cat
+
 REPO_URL="https://github.com/atrulekeep/GeoMind.git"
 SSH_URL="git@github.com:atrulekeep/GeoMind.git"
 BRANCH="main"

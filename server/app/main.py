@@ -4,12 +4,13 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.gzip import GZipMiddleware
 
 from .agent import APPROVALS, agent_events, run_agent
+from .export_html import generate_export_html
 from .config import load_settings
 from .registry import DatasetRegistry
 from .session import Session
@@ -89,6 +90,21 @@ async def chat_stream(body: ChatBody):
         media_type='text/event-stream',
         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
     )
+
+
+@app.get('/api/scene/export')
+def scene_export(download: int = 0) -> HTMLResponse:
+    if session.store.current is None:
+        return HTMLResponse(
+            '<html><body style="font-family:sans-serif;padding:40px">'
+            '<h2>暂无场景</h2><p>请先生成一个三维场景再导出。</p></body></html>',
+            status_code=400,
+        )
+    html = generate_export_html(session.store.current.model_dump())
+    headers = {}
+    if download:
+        headers['Content-Disposition'] = 'attachment; filename="geomind-scene.html"'
+    return HTMLResponse(content=html, headers=headers)
 
 
 # ---------- Web 版：同源托管渲染端静态产物（必须在所有 API 路由之后挂载） ----------

@@ -2,12 +2,22 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import ChatPanel from './components/ChatPanel.vue'
 import CesiumViewer from './components/CesiumViewer.vue'
-import { checkHealth } from './lib/api'
+import { checkHealth, getExportUrl } from './lib/api'
 import type { SceneSpec } from './types/scene'
 
 const scene = ref<SceneSpec | null>(null)
 const sidecarOk = ref(false)
 let timer: ReturnType<typeof setInterval> | null = null
+
+function onPreview(): void {
+  if (!scene.value) return
+  window.open(getExportUrl(), '_blank')
+}
+
+function onDownload(): void {
+  if (!scene.value) return
+  window.open(`${getExportUrl()}?download=1`, '_blank')
+}
 
 onMounted(() => {
   const poll = async (): Promise<void> => {
@@ -33,6 +43,8 @@ onBeforeUnmount(() => {
       <div class="status">
         <i :class="sidecarOk ? 'ok' : 'bad'"></i>
         {{ sidecarOk ? 'Sidecar 已连接' : 'Sidecar 未连接' }}
+        <button class="export-btn" :disabled="!scene" @click="onPreview">场景预览</button>
+        <button class="export-btn" :disabled="!scene" @click="onDownload">下载 HTML</button>
       </div>
     </header>
     <div class="workspace">
@@ -94,6 +106,24 @@ onBeforeUnmount(() => {
 }
 .status i.bad {
   background: #f87171;
+}
+.export-btn {
+  margin-left: 14px;
+  padding: 3px 12px;
+  border: 1px solid #2c3c60;
+  border-radius: 6px;
+  background: transparent;
+  color: #9fc0ff;
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+.export-btn:hover:not(:disabled) {
+  border-color: #3b82f6;
+}
+.export-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 .workspace {
   flex: 1;
