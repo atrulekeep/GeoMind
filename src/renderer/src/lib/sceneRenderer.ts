@@ -1,7 +1,13 @@
 import './cesium-base'
 import * as Cesium from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
-import type { BasemapId, GeoJsonFeature, SceneLayer, SceneSpec, TerrainId } from '@renderer/types/scene'
+import type {
+  BasemapId,
+  GeoJsonFeature,
+  SceneLayer,
+  SceneSpec,
+  TerrainId
+} from '@renderer/types/scene'
 
 const DEFAULT_COLOR = '#3FA7E6CC'
 
@@ -27,6 +33,29 @@ function pointCoords(feature: GeoJsonFeature): [number, number] | null {
   return null
 }
 
+/** 提取 Polygon/MultiPolygon 的所有外环（[lon, lat] 顶点数组）用于画边界线 */
+function polygonRings(geometry: GeoJsonFeature['geometry']): number[][][] {
+  if (geometry.type === 'Polygon') return geometry.coordinates as number[][][]
+  if (geometry.type === 'MultiPolygon') return (geometry.coordinates as number[][][][]).flat()
+  return []
+}
+
+function formatLabelValue(value: unknown): string {
+  if (typeof value === 'number') return String(Number(value.toFixed(2)))
+  return String(value ?? '').trim()
+}
+
+/** 参与屏幕避让的标注条目 */
+interface LabelItem {
+  entity: Cesium.Entity
+  pos: Cesium.Cartesian3
+  /** 近似屏幕占用（像素） */
+  w: number
+  h: number
+  /** 遮挡优先级：指标值大者优先显示 */
+  priority: number
+}
+
 function createImageryProvider(id: BasemapId): Cesium.ImageryProvider {
   if (id === 'osm') {
     return new Cesium.OpenStreetMapImageryProvider({ url: 'https://tile.openstreetmap.org/' })
@@ -49,11 +78,18 @@ export class SceneRenderer {
   private dataSources = new Map<string, Cesium.DataSource>()
   private pointEntities = new Map<string, Cesium.Entity[]>()
   private modelEntities = new Map<string, Cesium.Entity[]>()
+  private labelEntities = new Map<string, Cesium.Entity[]>()
+  private outlineEntities = new Map<string, Cesium.Entity[]>()
+  private labelItems = new Map<string, LabelItem[]>()
   // Viewer 初始底图是高德；未指定 basemap 的场景不改变现状
   private currentBasemap: BasemapId = 'gaode'
   private currentTerrain: TerrainId = 'flat'
 
-  constructor(private readonly viewer: Cesium.Viewer) {}
+  constructor(private readonly viewer: Cesium.Viewer) {
+    // 相机停止变化时重算标注的屏幕占位，实现缩放/旋转下的自动避让
+    viewer.camera.percentageChanged = 0.02
+    viewer.camera.changed.addEventListener(() => this.updateLabelVisibility())
+  }
 
   async render(scene: SceneSpec): Promise<void> {
     if (scene.basemap) this.applyBasemap(scene.basemap)
@@ -66,6 +102,10 @@ export class SceneRenderer {
         this.renderPoints(layer)
       } else if (layer.kind === 'gltf-model') {
         this.renderModels(layer)
+      } else if (layer.kind === 'labels') {
+        this.renderLabels(layer)
+      } else if (layer.kind === 'polygon-outline') {
+        this.renderOutline(layer)
       } else {
         await this.renderPolygons(layer)
       }
@@ -77,7 +117,12 @@ export class SceneRenderer {
         this.dataSources.delete(id)
       }
     }
-    for (const map of [this.pointEntities, this.modelEntities] as const) {
+    for (const map of [
+      this.pointEntities,
+      this.modelEntities,
+      this.labelEntities,
+      this.outlineEntities
+    ] as const) {
       for (const id of [...map.keys()]) {
         if (!keep.has(id)) {
           for (const e of map.get(id) ?? []) this.viewer.entities.remove(e)
@@ -85,6 +130,10 @@ export class SceneRenderer {
         }
       }
     }
+    for (const id of [...this.labelItems.keys()]) {
+      if (!keep.has(id)) this.labelItems.delete(id)
+    }
+    this.updateLabelVisibility()
     if (scene.camera) {
       const cam = scene.camera
       this.viewer.camera.flyTo({
@@ -110,7 +159,8 @@ export class SceneRenderer {
     if (id === this.currentTerrain) return
     try {
       if (id === 'arcgis') {
-        const provider = await Cesium.ArcGISTiledElevationTerrainProvider.fromUrl(ARCGIS_TERRAIN_URL)
+        const provider =
+          await Cesium.ArcGISTiledElevationTerrainProvider.fromUrl(ARCGIS_TERRAIN_URL)
         this.viewer.scene.setTerrain(new Cesium.Terrain(Promise.resolve(provider)))
       } else {
         this.viewer.scene.setTerrain(
@@ -183,6 +233,121 @@ export class SceneRenderer {
       )
     }
     this.pointEntities.set(layer.id, added)
+  }
+
+  /** labels：文字标注（服务端已把面要素锚点解析为面内代表点）；经典样式=白字+深色底衬+黑描边 */
+  private renderLabels(layer: SceneLayer): void {
+    for (const e of this.labelEntities.get(layer.id) ?? []) this.viewer.entities.remove(e)
+    const color = parseColor(layer.color || '#FFFFFF')
+    const fields = layer.labelFields ?? []
+    const fontSize = layer.labelFontSize ?? 14
+    const items: LabelItem[] = []
+    for (const feature of layer.geojson?.features ?? []) {
+      const coords = pointCoords(feature)
+      if (!coords) continue
+      const props = feature.properties ?? {}
+      const text = fields
+        .map((f) => formatLabelValue(props[f]))
+        .filter(Boolean)
+        .join(' ')
+      const full = [text, layer.labelUnit?.trim()].filter(Boolean).join(' ')
+      if (!full) continue
+      // 与柱图层同指标来源 + 同 heightScale 时，文字自动升到柱顶
+      const raw = layer.heightProperty ? Number(props[layer.heightProperty] ?? 0) : 0
+      const height = (Number.isFinite(raw) ? raw : 0) * (layer.heightScale ?? 1)
+      const pos = Cesium.Cartesian3.fromDegrees(coords[0], coords[1], height)
+      const entity = this.viewer.entities.add({
+        position: pos,
+        label: {
+          text: full,
+          font: `bold ${fontSize}px "PingFang SC", "Microsoft YaHei", sans-serif`,
+          fillColor: color,
+          outlineColor: Cesium.Color.BLACK.withAlpha(0.85),
+          outlineWidth: 2,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          showBackground: true,
+          backgroundColor: Cesium.Color.fromCssColorString('#1F2937').withAlpha(0.72),
+          backgroundPadding: new Cesium.Cartesian2(7, 4),
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        }
+      })
+      items.push({
+        entity,
+        pos,
+        // 近似屏幕占位：字符宽 × 0.62 + 底衬内边距
+        w: full.length * fontSize * 0.62 + 16,
+        h: fontSize + 12,
+        // 指标值大的标注优先显示（如 GDP 高的区在重叠时保留）
+        priority: Number.isFinite(raw) ? raw : 0
+      })
+    }
+    this.labelEntities.set(
+      layer.id,
+      items.map((i) => i.entity)
+    )
+    this.labelItems.set(layer.id, items)
+  }
+
+  /** polygon-outline：区域边界线，用于区分相邻区域。
+   * flat 地形下抬升 2m 绘制——贴地线与贴地填色面存在深度冲突，内部边界会被面盖住 */
+  private renderOutline(layer: SceneLayer): void {
+    for (const e of this.outlineEntities.get(layer.id) ?? []) this.viewer.entities.remove(e)
+    const color = parseColor(layer.color)
+    const width = layer.width ?? 3
+    const clamped = this.currentTerrain === 'arcgis'
+    const added: Cesium.Entity[] = []
+    for (const feature of layer.geojson?.features ?? []) {
+      for (const ring of polygonRings(feature.geometry)) {
+        if (ring.length < 3) continue
+        const flat: number[] = []
+        for (const c of ring) {
+          flat.push(c[0], c[1])
+          if (!clamped) flat.push(2)
+        }
+        added.push(
+          this.viewer.entities.add({
+            polyline: {
+              positions: clamped
+                ? Cesium.Cartesian3.fromDegreesArray(flat)
+                : Cesium.Cartesian3.fromDegreesArrayHeights(flat),
+              width,
+              material: color,
+              clampToGround: clamped
+            }
+          })
+        )
+      }
+    }
+    this.outlineEntities.set(layer.id, added)
+  }
+
+  /** 标注屏幕避让：把各标注投影到屏幕坐标做矩形相交测试，重叠时隐藏优先级低（指标值小）的 */
+  private updateLabelVisibility(): void {
+    const all: LabelItem[] = []
+    for (const items of this.labelItems.values()) all.push(...items)
+    if (all.length === 0) return
+    all.sort((a, b) => b.priority - a.priority)
+    const placed: { x: number; y: number; w: number; h: number }[] = []
+    for (const item of all) {
+      let show = false
+      const wc = Cesium.SceneTransforms.worldToWindowCoordinates(this.viewer.scene, item.pos)
+      if (wc) {
+        const rect = { x: wc.x - item.w / 2, y: wc.y - item.h, w: item.w, h: item.h }
+        const overlap = placed.some(
+          (r) =>
+            rect.x < r.x + r.w &&
+            rect.x + rect.w > r.x &&
+            rect.y < r.y + r.h &&
+            rect.y + rect.h > r.y
+        )
+        if (!overlap) {
+          placed.push(rect)
+          show = true
+        }
+      }
+      if (item.entity.show !== show) item.entity.show = show
+    }
   }
 
   private renderModels(layer: SceneLayer): void {

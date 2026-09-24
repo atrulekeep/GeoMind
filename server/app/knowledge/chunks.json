@@ -65,9 +65,9 @@
   {
     "id": "kb-0010",
     "category": "data",
-    "title": "样例数据的可信度边界",
-    "tags": ["样例", "sample", "演示数据", "医院", "近似", "真实数据", "免责"],
-    "text": "beijing_hospitals 是手工编造的 36 个近似坐标（datasets 清单中 sample=true），只能演示链路，不能用于真实结论，回复中涉及具体数字时必须提示『演示样例数据』。beijing_districts 是 DataV 官方区划边界，可信。beijing_landmarks 是公开知名地标坐标，可信。看到 sample=true 的数据集时，主动在结论中声明数据性质，避免用户把演示数字当真。"
+    "title": "数据可信度分级与来源声明",
+    "tags": ["可信度", "数据来源", "OSM", "统计公报", "ODbL", "免责"],
+    "text": "当前所有数据集 sample=false，按可信度分三级：①官方统计：beijing_district_gdp 的 gdp2023（亿元）来自各区 2023 统计公报/北京市统计局初步核算数，可直接引用；②官方/公开边界：beijing_districts 来自阿里云 DataV.GeoAtlas，beijing_landmarks 为公开知名地标坐标；③OpenStreetMap 贡献数据：医院/高校/地铁/博物馆/遗址/红色教育基地/国贸建筑（© OSM 贡献者, ODbL），点位由志愿者测绘、覆盖不完整（医院为主要医院约百个、非全部医疗机构），引用具体数字时应说明『OSM 公开数据，覆盖不完整』。beijing_red_sites 由 heritage/museums 按名称主题派生。不要把 OSM 数据表述为官方全量名录。"
   },
   {
     "id": "kb-011",
@@ -88,7 +88,7 @@
     "category": "workflow",
     "title": "视角（camera）控制策略",
     "tags": ["相机", "视角", "camera", "cameraDatasetId", "fly_to", "飞行", "缩放"],
-    "text": "视角由数据范围自动计算，不需要也不能手写经纬度。render_scene 的 cameraDatasetId 指定对准哪个数据集的整体范围（市级统计用区划面，单点模型用锚点点集）。用户事后说『飞过去/放大看/视角对准X』时调用 fly_to（参数 datasetId）。点数据集范围很小时自动给 3000 米最低高度。多个图层时优先对准面数据集以容纳全部内容；用户只要求看某个地标时，fly_to 传该锚点数据集。"
+    "text": "视角由数据范围自动计算，不需要也不能手写经纬度。render_scene 的 cameraDatasetId 指定对准哪个数据集的整体范围（市级统计用区划面，单点模型用锚点点集）。相机默认 45° 斜俯视且服务端已做居中补偿（相机向南后撤），目标区域会落在屏幕正中。用户事后说『飞过去/放大看/视角对准X』时调用 fly_to（参数 datasetId）。点数据集范围很小时自动给 3000 米最低高度。多个图层时优先对准面数据集以容纳全部内容；用户只要求看某个地标时，fly_to 传该锚点数据集。"
   },
   {
     "id": "kb-014",
@@ -116,7 +116,7 @@
     "category": "workflow",
     "title": "用户意图到图层类型的映射",
     "tags": ["意图识别", "图表选择", "柱状图", "热力", "填色", "点位", "需求映射"],
-    "text": "意图映射表：『多少/数量/统计/对比各区』→ polygon-extrusion（三维柱）；『画出/显示边界/范围』→ polygon-fill；『标出/显示位置/在哪里』→ points；『在X处放模型/人物/车/建筑示意』→ gltf-model；『卫星/真实照片底图』→ basemap=arcgis-satellite；『地形/山/起伏』→ terrain=arcgis。用户说『热力图』时，当前没有热力栅格能力，应说明可用『按指标拉伸的三维柱』替代表达区级强度差异，不要承诺生成热力图。"
+    "text": "意图映射表：『多少/数量/统计/对比各区』→ polygon-extrusion（三维柱）；『范围填色/区域着色』→ polygon-fill；『画出边界/边界线/描边/用线区分各区』→ polygon-outline（真轮廓线，贴合『边界』语义）；『标出/显示位置/在哪里』→ points；『显示名字/标注文字/柱子上标数值』→ labels（labelFields 指定字段）；『在X处放模型/人物/车/建筑示意』→ gltf-model；『卫星/真实照片底图』→ basemap=arcgis-satellite；『地形/山/起伏』→ terrain=arcgis。用户说『热力图』时，当前没有热力栅格能力，应说明可用『按指标拉伸的三维柱』替代表达区级强度差异，不要承诺生成热力图。"
   },
   {
     "id": "kb-018",
@@ -137,7 +137,7 @@
     "category": "workflow",
     "title": "回复的结构规范与数据结论表达",
     "tags": ["回复规范", "总结", "结论", "表达", "数字", "汇报"],
-    "text": "完成任务后的文字总结应包含：①做了什么（调用链一句话）；②关键数据结论（从工具返回中挑 top3/极值，如西城8、朝阳6、海淀6；延庆0）；③数据性质提示（样例数据/归一化限制）；④必要的解读（中心城密集、远郊稀疏）。所有数字必须能在 traces 的工具返回里找到出处，禁止四舍五入成『约』后再做加减。markdown 简短即可，不要罗列完整 JSON。"
+    "text": "完成任务后的文字总结应包含：①做了什么（调用链一句话）；②关键数据结论（从工具返回中挑 top3/极值，如 GDP 海淀 11020.2、朝阳 8387.2，最低延庆 224.1）；③数据性质提示（OSM 覆盖不完整/未归一化）；④必要的解读（中心城密集、远郊稀疏）。所有数字必须能在 traces 的工具返回里找到出处，禁止四舍五入成『约』后再做加减。markdown 简短即可，不要罗列完整 JSON。"
   },
   {
     "id": "kb-021",
@@ -166,5 +166,32 @@
     "title": "多轮对话中的指代处理",
     "tags": ["多轮", "指代", "上下文", "它", "这个", "换成", "接着"],
     "text": "系统保留最近 20 条消息，用户会用代词：『再加上它们』『换成卫星图』『飞到那儿』。处理方式：从上文确定指代对象（数据集、图层 id、地名）；图层样式微调（换颜色/高度）要复用之前的图层 id 走 merge；用户说『不要XX图层』且场景里图层很少时用 replaceScene=true 重建（该操作会触发用户审批）；指代无法消解时，用一次 describe_dataset/list_datasets 澄清，而不是直接反问用户（优先自助）。"
+  },
+  {
+    "id": "kb-025",
+    "category": "data",
+    "title": "数据集全景与双源（local/url）加载机制",
+    "tags": ["数据集清单", "双源", "私有化", "url", "缓存", "Overpass", "gdp2023", "建筑"],
+    "text": "共 10 个数据集。面：beijing_districts（区县边界）、beijing_district_gdp（含 gdp2023 字段，可直接按 GDP 三维柱对比，无需先 aggregate）、beijing_cbd_buildings（国贸 footprint，属性含 height 米/levels 楼层，部分要素有值）。点：beijing_landmarks（6 地标锚点）、beijing_hospitals、beijing_universities、beijing_subway_stations、beijing_museums、beijing_heritage_sites、beijing_red_sites（点属性统一含 name/category/district）。来源机制：source.type=local 为随仓库私有化文件；source.type=url 为链接加载（Overpass API，format=osm-json），首次拉取后落盘到 source.cache，之后离线可读；GEOMIND_REFRESH=1 强制重拉。模型 4 个：cesium_man/ground_vehicle/box 为链接，cesium_drone 为本地文件经 sidecar /api/assets 加载。典型 GDP 分析跳过 aggregate：一层 polygon-extrusion 直接 metricField='gdp2023'，heightScale 取 0.3~0.6（数值千亿级；scale 太小如 0.05 柱体在市级视角几乎不可见），服务端读取全部 16 区真实值并在返回的 metricSummary 里给出（含 max/min），回复中的数字只能引用 metricSummary，禁止自己转述或编造。"
+  },
+  {
+    "id": "kb-026",
+    "category": "scene-recipe",
+    "title": "文字标注（labels）与边界线（polygon-outline）图层用法",
+    "tags": [
+      "labels",
+      "标注",
+      "文字",
+      "柱顶",
+      "区名",
+      "边界线",
+      "outline",
+      "描边",
+      "width",
+      "labelFields",
+      "labelUnit",
+      "单位"
+    ],
+    "text": "labels 文字标注：kind=labels，必填 labelFields（字段数组，逐要素取值拼接，如 ['name','gdp2023']），labelUnit 给数值追加单位（如 labelUnit='亿元' 显示为『东城区 3574.3 亿元』，GDP/金额类指标必须带单位），可选 labelFontSize（默认 14）。默认经典样式：白色文字 + 深灰半透明底衬 + 黑描边，任何底图上都清晰；用户说『标签看不清/换标签颜色/字太大』时，用 merge 复用同 id 改 color（如黄色 #FFD166）或 labelFontSize。锚点由服务端解析为面内代表点，不要自己算坐标。柱顶标注配方：labels 图层与 polygon-extrusion 柱图层用同一 datasetId、同一指标来源（同一 metricField 或相同 metricValues）、同一 heightScale，文字自动升到柱顶。渲染端会做标注屏幕避让：缩放到标注重叠时自动隐藏指标值小的，放大后自动恢复，无需处理。polygon-outline 边界线：kind=polygon-outline，画要素轮廓线，color 为线色、width 为线宽像素（默认 3），用户要求『用红色边界线区分各区』时用红色如 #FF0000。flat 地形下边界线自动抬升 2 米绘制以避免被填色面遮挡（服务端/渲染端已处理）；不要用半透明 polygon-fill 面去近似边界线。"
   }
 ]

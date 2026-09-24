@@ -4,28 +4,162 @@
       "id": "beijing_districts",
       "name": "北京市行政区边界",
       "kind": "polygons",
-      "path": "beijing_districts.geojson",
+      "source": {
+        "type": "local",
+        "path": "beijing_districts.geojson"
+      },
       "sample": false,
       "description": "北京市 16 个区的行政区边界（来源：阿里云 DataV.GeoAtlas）",
-      "groupFields": ["name", "adcode"]
+      "groupFields": [
+        "name",
+        "adcode"
+      ]
     },
     {
-      "id": "beijing_hospitals",
-      "name": "北京市医院点位（演示样例）",
-      "kind": "points",
-      "path": "beijing_hospitals.geojson",
-      "sample": true,
-      "description": "覆盖 16 区的 36 个知名医院点位，坐标为近似值，仅用于演示，待替换为真实数据",
-      "groupFields": ["district", "name"]
+      "id": "beijing_district_gdp",
+      "name": "北京市各区 GDP 指标面（2023）",
+      "kind": "polygons",
+      "source": {
+        "type": "local",
+        "path": "beijing_district_gdp.geojson"
+      },
+      "sample": false,
+      "description": "16 区行政区面内嵌 gdp2023（地区生产总值，亿元）。来源：各区 2023 年统计公报 / 北京市统计局，2024 年初步核算数",
+      "groupFields": [
+        "name",
+        "adcode"
+      ]
     },
     {
       "id": "beijing_landmarks",
       "name": "北京知名地标点位",
       "kind": "points",
-      "path": "beijing_landmarks.geojson",
+      "source": {
+        "type": "local",
+        "path": "beijing_landmarks.geojson"
+      },
       "sample": false,
       "description": "天安门、鸟巢、水立方、天坛、中国尊、北京南站 6 个公开坐标点位，可作为三维模型的挂载锚点",
-      "groupFields": ["name", "category"]
+      "groupFields": [
+        "name",
+        "category"
+      ]
+    },
+    {
+      "id": "beijing_red_sites",
+      "name": "北京市红色教育基地 / 国防教育景点（公开人文 POI）",
+      "kind": "points",
+      "source": {
+        "type": "local",
+        "path": "beijing_red_sites.geojson"
+      },
+      "sample": false,
+      "description": "从 OSM 公开数据按主题筛选的革命遗址/烈士纪念地/名人旧址，不含真实军事设施坐标；由 heritage/museums 数据集派生",
+      "groupFields": [
+        "district",
+        "name"
+      ]
+    },
+    {
+      "id": "beijing_hospitals",
+      "name": "北京市医院点位（真实）",
+      "kind": "points",
+      "source": {
+        "type": "url",
+        "url": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A90%5D%3B%0Aarea%5B%22name%22%3D%22%E5%8C%97%E4%BA%AC%E5%B8%82%22%5D%5B%22boundary%22%3D%22administrative%22%5D%5B%22admin_level%22%3D%224%22%5D-%3E.bj%3B%0A%28%0A%20%20node%5B%22amenity%22%3D%22hospital%22%5D%28area.bj%29%3B%0A%20%20way%5B%22amenity%22%3D%22hospital%22%5D%28area.bj%29%3B%0A%29%3B%0Aout%20center%3B",
+        "format": "osm-json",
+        "cache": "beijing_hospitals.geojson"
+      },
+      "sample": false,
+      "description": "OpenStreetMap 北京市医院点位（含名称与所属区县），来源 OSM 贡献者, ODbL",
+      "groupFields": [
+        "district",
+        "name"
+      ]
+    },
+    {
+      "id": "beijing_universities",
+      "name": "北京市高等院校点位（真实）",
+      "kind": "points",
+      "source": {
+        "type": "url",
+        "url": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A90%5D%3B%0Aarea%5B%22name%22%3D%22%E5%8C%97%E4%BA%AC%E5%B8%82%22%5D%5B%22boundary%22%3D%22administrative%22%5D%5B%22admin_level%22%3D%224%22%5D-%3E.bj%3B%0A%28%0A%20%20node%5B%22amenity%22%3D%22university%22%5D%28area.bj%29%3B%0A%20%20way%5B%22amenity%22%3D%22university%22%5D%28area.bj%29%3B%0A%20%20node%5B%22amenity%22%3D%22college%22%5D%28area.bj%29%3B%0A%20%20way%5B%22amenity%22%3D%22college%22%5D%28area.bj%29%3B%0A%29%3B%0Aout%20center%3B",
+        "format": "osm-json",
+        "cache": "beijing_universities.geojson"
+      },
+      "sample": false,
+      "description": "OpenStreetMap 北京市普通高校/学院点位，来源 OSM 贡献者, ODbL",
+      "groupFields": [
+        "district",
+        "name"
+      ]
+    },
+    {
+      "id": "beijing_subway_stations",
+      "name": "北京市地铁站点（真实）",
+      "kind": "points",
+      "source": {
+        "type": "url",
+        "url": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A90%5D%3B%0Aarea%5B%22name%22%3D%22%E5%8C%97%E4%BA%AC%E5%B8%82%22%5D%5B%22boundary%22%3D%22administrative%22%5D%5B%22admin_level%22%3D%224%22%5D-%3E.bj%3B%0A%28%0A%20%20node%5B%22railway%22%3D%22station%22%5D%5B%22station%22%3D%22subway%22%5D%28area.bj%29%3B%0A%20%20node%5B%22public_transport%22%3D%22station%22%5D%5B%22subway%22%3D%22yes%22%5D%28area.bj%29%3B%0A%29%3B%0Aout%20center%3B",
+        "format": "osm-json",
+        "cache": "beijing_subway_stations.geojson"
+      },
+      "sample": false,
+      "description": "OpenStreetMap 北京市地铁站点，来源 OSM 贡献者, ODbL",
+      "groupFields": [
+        "district",
+        "name"
+      ]
+    },
+    {
+      "id": "beijing_museums",
+      "name": "北京市博物馆点位（真实）",
+      "kind": "points",
+      "source": {
+        "type": "url",
+        "url": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A90%5D%3B%0Aarea%5B%22name%22%3D%22%E5%8C%97%E4%BA%AC%E5%B8%82%22%5D%5B%22boundary%22%3D%22administrative%22%5D%5B%22admin_level%22%3D%224%22%5D-%3E.bj%3B%0A%28%0A%20%20node%5B%22tourism%22%3D%22museum%22%5D%28area.bj%29%3B%0A%20%20way%5B%22tourism%22%3D%22museum%22%5D%28area.bj%29%3B%0A%29%3B%0Aout%20center%3B",
+        "format": "osm-json",
+        "cache": "beijing_museums.geojson"
+      },
+      "sample": false,
+      "description": "OpenStreetMap 北京市博物馆点位，来源 OSM 贡献者, ODbL",
+      "groupFields": [
+        "district",
+        "name"
+      ]
+    },
+    {
+      "id": "beijing_heritage_sites",
+      "name": "北京市历史文化遗址（人文，真实）",
+      "kind": "points",
+      "source": {
+        "type": "url",
+        "url": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A90%5D%3B%0Aarea%5B%22name%22%3D%22%E5%8C%97%E4%BA%AC%E5%B8%82%22%5D%5B%22boundary%22%3D%22administrative%22%5D%5B%22admin_level%22%3D%224%22%5D-%3E.bj%3B%0A%28%0A%20%20node%5B%22historic%22%5D%28area.bj%29%3B%0A%20%20way%5B%22historic%22%5D%28area.bj%29%3B%0A%29%3B%0Aout%20center%3B",
+        "format": "osm-json",
+        "cache": "beijing_heritage_sites.geojson"
+      },
+      "sample": false,
+      "description": "OpenStreetMap 北京市历史遗迹/纪念地（historic=*）点位，来源 OSM 贡献者, ODbL",
+      "groupFields": [
+        "district",
+        "name"
+      ]
+    },
+    {
+      "id": "beijing_cbd_buildings",
+      "name": "北京国贸 CBD 建筑轮廓（真实）",
+      "kind": "polygons",
+      "source": {
+        "type": "url",
+        "url": "https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A90%5D%3B%0A%28%0A%20%20way%5B%22building%22%5D%2839.9%2C116.445%2C39.918%2C116.475%29%3B%0A%29%3B%0Aout%20geom%3B",
+        "format": "osm-json",
+        "cache": "beijing_cbd_buildings.geojson"
+      },
+      "sample": false,
+      "description": "OpenStreetMap 国贸 CBD 区域建筑 footprint（部分含 height/levels 真实属性），来源 OSM 贡献者, ODbL",
+      "groupFields": [
+        "name"
+      ]
     }
   ]
 }

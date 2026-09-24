@@ -5,7 +5,7 @@
     "turns": ["把北京各区的行政区划边界画出来"],
     "expect": {
       "must_call": ["render_scene"],
-      "must_render_kinds": ["polygon-fill"],
+      "any_render_kinds": [["polygon-fill", "polygon-outline"]],
       "must_render_datasets": ["beijing_districts"],
       "final_layer_count": 1
     }
@@ -37,7 +37,8 @@
     "turns": ["把北京区划边界和医院点位同时显示在一个场景里"],
     "expect": {
       "must_call": ["render_scene"],
-      "must_render_kinds": ["polygon-fill", "points"],
+      "must_render_kinds": ["points"],
+      "any_render_kinds": [["polygon-fill", "polygon-outline"]],
       "must_render_datasets": ["beijing_districts", "beijing_hospitals"],
       "final_layer_count": 2
     }
@@ -233,7 +234,8 @@
     "turns": ["先画出区划边界", "再叠加医院点位，不要动边界"],
     "expect": {
       "must_call": ["render_scene"],
-      "must_render_kinds": ["polygon-fill", "points"],
+      "must_render_kinds": ["points"],
+      "any_render_kinds": [["polygon-fill", "polygon-outline"]],
       "final_layer_count": 2,
       "forbid_replace": true
     }
@@ -252,7 +254,7 @@
     "turns": ["先显示医院点位", "全部清空，场景里只保留区划边界"],
     "expect": {
       "must_call": ["render_scene"],
-      "must_render_kinds": ["polygon-fill"],
+      "any_render_kinds": [["polygon-fill", "polygon-outline"]],
       "must_replace": true,
       "final_layer_count": 1
     }
@@ -263,7 +265,8 @@
     "turns": ["显示区划边界和医院点位", "把医院点位的颜色改成红色，其他不变"],
     "expect": {
       "must_call": ["render_scene"],
-      "must_render_kinds": ["polygon-fill", "points"],
+      "must_render_kinds": ["points"],
+      "any_render_kinds": [["polygon-fill", "polygon-outline"]],
       "final_layer_count": 2,
       "forbid_replace": true
     }
@@ -302,6 +305,18 @@
     "turns": ["帮我分析每个地标一公里范围内有多少医院"],
     "expect": {
       "reply_contains": ["缓冲"]
+    }
+  },
+  {
+    "id": "eval-31",
+    "category": "advanced-render",
+    "turns": ["用三维柱图展示北京各区的经济总量，柱顶标注区名和GDP数值，并用红色边界线区分不同的区"],
+    "expect": {
+      "must_call": ["render_scene"],
+      "must_render_kinds": ["polygon-extrusion", "labels", "polygon-outline"],
+      "must_render_datasets": ["beijing_district_gdp"],
+      "final_layer_count": 3,
+      "reply_contains": ["海淀"]
     }
   }
 ]

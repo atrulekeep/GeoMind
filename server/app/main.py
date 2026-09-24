@@ -2,9 +2,9 @@ import json
 import os
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.gzip import GZipMiddleware
@@ -12,7 +12,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from .agent import APPROVALS, agent_events, run_agent
 from .export_html import generate_export_html
 from .config import load_settings
-from .registry import DatasetRegistry
+from .registry import DATA_DIR, DatasetRegistry
 from .session import Session
 
 app = FastAPI(title='GeoMind Sidecar', version='0.2.0')
@@ -89,6 +89,30 @@ async def chat_stream(body: ChatBody):
         event_source(),
         media_type='text/event-stream',
         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
+    )
+
+
+@app.get('/api/assets/{relative_path:path}')
+def assets(relative_path: str) -> FileResponse:
+    """私有化本地资产（glb/gltf/纹理等）经 sidecar 提供给前端，严格限定在 data 目录内"""
+    base = DATA_DIR.resolve()
+    target = (base / relative_path).resolve()
+    if base not in target.parents or not target.is_file():
+        raise HTTPException(status_code=404, detail='资产不存在')
+    media_types = {
+        '.glb': 'model/gltf-binary',
+        '.gltf': 'model/gltf+json',
+        '.bin': 'application/octet-stream',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.webp': 'image/webp',
+        '.ktx2': 'image/ktx2',
+    }
+    return FileResponse(
+        str(target),
+        media_type=media_types.get(target.suffix.lower()),
+        headers={'Cache-Control': 'public, max-age=86400'},
     )
 
 

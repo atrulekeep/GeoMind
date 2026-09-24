@@ -11,12 +11,13 @@
 - **LangGraph Agent**：显式 `plan → execute → plan` 状态机（上限 12 步），流式 SSE
   输出思考状态、工具调用/返回、逐 token 回复；工具错误以结构化结果回喂，模型自纠
 - **六类 GIS 工具**：数据集列表、字段探测、点落面空间聚合（GeoPandas `sjoin`）、
-  声明式三维渲染（三维柱/填色/点位/glTF 模型）、视角飞行、知识库检索
+  声明式三维渲染（三维柱/填色/点位/文字标注/边界线/glTF 模型，指标支持 `metricField`
+  属性直读并返回真实数值摘要）、视角飞行、知识库检索
 - **多轮场景 patch**：默认 merge（同 id 图层替换、新图层追加、底图/地形继承），
   `replaceScene` 全量重建
 - **HITL 人工审批**：`replaceScene` 等破坏性操作经 LangGraph `interrupt` 暂停，
   前端批准/拒绝后恢复；拒绝时模型自主降级为增量方案；180 秒超时自动拒绝
-- **本地 RAG**：24 条手写 GIS 知识，hybrid 检索（本地 bge-large-zh 向量 + BM25 融合，
+- **本地 RAG**：26 条手写 GIS 知识，hybrid 检索（本地 bge-large-zh 向量 + BM25 融合，
   Ollama 不可用时自动降级）；embedding 带版本缓存
 - **MCP Server**：同一份 Pydantic 工具契约以 stdio MCP 暴露给 Claude Desktop / Cursor
 - **评测体系**：30 条端到端用例、确定性断言（不用 LLM 打分）、JSON 报告落盘；
@@ -95,11 +96,17 @@ cd server
 
 ## 数据说明
 
-- `beijing_districts`：DataV 官方行政区划边界（可信）
-- `beijing_hospitals`：36 个手工近似坐标的演示数据（`sample=true`，不可用于真实结论）
-- `beijing_landmarks`：公开知名地标坐标
+10 个数据集统一在 `server/app/data/`（清单：`datasets.json` / `models.json`），双源加载：
+
+- **私有化本地源**（`source.type=local`）：`beijing_districts`（DataV 区划边界）、
+  `beijing_district_gdp`（16 区 2023 GDP 指标面，来源各区统计公报/北京市统计局）、
+  `beijing_landmarks`（公开地标）、`beijing_red_sites`（公开红色教育基地/人文点）
+- **链接源**（`source.type=url`）：医院/高校/地铁/博物馆/历史遗址点位与国贸 CBD 建筑轮廓，
+  来自 OpenStreetMap Overpass API（© OSM 贡献者, ODbL，覆盖不完整）；首次拉取后
+  **落盘缓存**为本地 GeoJSON，之后离线可读，`GEOMIND_REFRESH=1` 强制重拉
 - 底图/地形：高德、OSM、ArcGIS World_Imagery / WorldElevation3D（均免 token）
-- 模型：Cesium 官方与 Khronos 公开 glb；所有几何服务端解析，LLM 不接触坐标
+- 模型：Cesium 官方与 Khronos 公开 glb（链接源）+ CesiumDrone（本地源，经 sidecar
+  `/api/assets` 加载）；所有几何服务端解析，LLM 不接触坐标
 
 ## 目录
 
@@ -110,7 +117,7 @@ server/app/
   agent.py             LangGraph 状态机 + 流式事件 + HITL
   tools.py             GIS 工具层与 OpenAI function-calling 契约
   knowledge.py         hybrid 检索（bge-large-zh 向量 + BM25）
-  knowledge/chunks.json 24 条 GIS 知识库
+  knowledge/chunks.json 26 条 GIS 知识库
   schemas.py           SceneSpec 与工具入参（Pydantic strict）
   mcp_server.py        stdio MCP Server
 server/evals/          30 条评测集与确定性 runner

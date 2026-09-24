@@ -113,6 +113,10 @@ def check(expect: dict, called: list[str], replace_seen: bool, args_blob: str,
     for kind in expect.get('must_render_kinds', []):
         if kind not in kinds:
             failures.append(f'最终场景缺少图层类型 {kind}（实际：{sorted(kinds)}）')
+    # 任选其一：同一语义可有多种等价图层（如"边界"可用 fill 或 outline）
+    for i, group in enumerate(expect.get('any_render_kinds', [])):
+        if not any(k in kinds for k in group):
+            failures.append(f'最终场景缺少可选图层组 #{i} {group} 中的任意类型（实际：{sorted(kinds)}）')
     for ds in expect.get('must_render_datasets', []):
         if ds not in render_dataset_ids:
             failures.append(f'render_scene 未引用数据集 {ds}（实际：{sorted(render_dataset_ids)}）')

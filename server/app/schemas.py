@@ -9,7 +9,9 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-LayerKind = Literal['polygon-fill', 'polygon-extrusion', 'points', 'gltf-model']
+LayerKind = Literal[
+    'polygon-fill', 'polygon-extrusion', 'points', 'gltf-model', 'labels', 'polygon-outline'
+]
 BasemapId = Literal['gaode', 'osm', 'arcgis-satellite']
 TerrainId = Literal['flat', 'arcgis']
 
@@ -30,14 +32,24 @@ class SceneLayerInput(StrictModel):
     kind: LayerKind
     # 矢量图层：数据集引用；模型图层：锚点点数据集引用
     datasetId: str
-    color: Optional[str] = '#3FA7E6CC'
+    # 未指定时按图层类型取默认：labels 白字（配深色底衬），其余 #3FA7E6CC
+    color: Optional[str] = None
     # 指标注入：按 metricGroupField 匹配数据集要素，写入 metricName 属性
     metricGroupField: Optional[str] = None
     metricName: Optional[str] = 'metric'
     metricValues: Optional[list[MetricValue]] = None
+    # 直读数据集自带指标字段（与 metricValues 二选一）；render_scene 返回 metricSummary 供引用真实数值
+    metricField: Optional[str] = None
     # 矢量渲染参数
     heightScale: Optional[float] = 1
     pointSize: Optional[int] = 8
+    # labels 专用：显示的字段列表（逐要素取值拼接为文字），labelFontSize 为字号像素，
+    # labelUnit 为附加在文字末尾的单位（如 '亿元' → '东城区 3574.3 亿元'）
+    labelFields: Optional[list[str]] = None
+    labelFontSize: Optional[int] = 14
+    labelUnit: Optional[str] = None
+    # polygon-outline 专用：边界线宽（像素）
+    width: Optional[float] = 3
     # gltf-model 专用：modelId 见模型注册表，位置按 datasetId 中
     # nameField == nameValue 的点要素解析（LLM 不接触坐标）
     modelId: Optional[str] = None
@@ -92,6 +104,12 @@ class ResolvedSceneLayer(BaseModel):
     heightProperty: Optional[str] = None
     heightScale: Optional[float] = None
     pointSize: Optional[int] = None
+    # labels
+    labelFields: Optional[list[str]] = None
+    labelFontSize: Optional[int] = None
+    labelUnit: Optional[str] = None
+    # polygon-outline
+    width: Optional[float] = None
     # gltf-model
     url: Optional[str] = None
     position: Optional[ModelPosition] = None

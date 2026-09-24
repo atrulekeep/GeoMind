@@ -189,6 +189,110 @@ window.__GEOMIND_SPEC__ = {spec_json};
     }});
   }}
 
+  var labelItems = [];
+
+  function renderLabels(layer) {{
+    var color = parseColor(layer.color || '#FFFFFF');
+    var fields = layer.labelFields || [];
+    var fontSize = layer.labelFontSize || 14;
+    var items = [];
+    (layer.geojson ? layer.geojson.features : []).forEach(function(f) {{
+      if (!f.geometry || f.geometry.type !== 'Point') return;
+      var c = f.geometry.coordinates;
+      var props = f.properties || {{}};
+      var text = fields
+        .map(function(name) {{
+          var v = props[name];
+          return typeof v === 'number' ? String(Number(v.toFixed(2))) : String(v == null ? '' : v).trim();
+        }})
+        .filter(Boolean)
+        .join(' ');
+      var full = [text, String(layer.labelUnit || '').trim()].filter(Boolean).join(' ');
+      if (!full) return;
+      var raw = layer.heightProperty ? Number(props[layer.heightProperty] || 0) : 0;
+      var height = (Number.isFinite(raw) ? raw : 0) * (layer.heightScale || 1);
+      var pos = Cesium.Cartesian3.fromDegrees(c[0], c[1], height);
+      var ent = viewer.entities.add({{
+        position: pos,
+        label: {{
+          text: full,
+          font: 'bold ' + fontSize + 'px "PingFang SC", "Microsoft YaHei", sans-serif',
+          fillColor: color,
+          outlineColor: Cesium.Color.BLACK.withAlpha(0.85),
+          outlineWidth: 2,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          showBackground: true,
+          backgroundColor: Cesium.Color.fromCssColorString('#1F2937').withAlpha(0.72),
+          backgroundPadding: new Cesium.Cartesian2(7, 4),
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        }}
+      }});
+      items.push({{
+        entity: ent, pos: pos,
+        w: full.length * fontSize * 0.62 + 16, h: fontSize + 12,
+        priority: Number.isFinite(raw) ? raw : 0
+      }});
+    }});
+    labelItems = labelItems.filter(function(it) {{ return it.layerId !== layer.id; }});
+    items.forEach(function(it) {{ it.layerId = layer.id; labelItems.push(it); }});
+  }}
+
+  function polygonRings(geometry) {{
+    if (!geometry) return [];
+    if (geometry.type === 'Polygon') return geometry.coordinates;
+    if (geometry.type === 'MultiPolygon') return geometry.coordinates.flat();
+    return [];
+  }}
+
+  function renderOutline(layer) {{
+    var color = parseColor(layer.color);
+    var width = layer.width || 3;
+    var clamped = window.__GEOMIND_SPEC__.terrain === 'arcgis';
+    (layer.geojson ? layer.geojson.features : []).forEach(function(f) {{
+      polygonRings(f.geometry).forEach(function(ring) {{
+        if (!ring || ring.length < 3) return;
+        var flat = [];
+        ring.forEach(function(c) {{
+          flat.push(c[0], c[1]);
+          if (!clamped) flat.push(2);
+        }});
+        viewer.entities.add({{
+          polyline: {{
+            positions: clamped
+              ? Cesium.Cartesian3.fromDegreesArray(flat)
+              : Cesium.Cartesian3.fromDegreesArrayHeights(flat),
+            width: width,
+            material: color,
+            clampToGround: clamped
+          }}
+        }});
+      }});
+    }});
+  }}
+
+  // 标注屏幕避让：投影到屏幕坐标做矩形相交，重叠时隐藏指标值小的
+  function updateLabelVisibility() {{
+    if (labelItems.length === 0) return;
+    var sorted = labelItems.slice().sort(function(a, b) {{ return b.priority - a.priority; }});
+    var placed = [];
+    sorted.forEach(function(item) {{
+      var show = false;
+      var wc = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, item.pos);
+      if (wc) {{
+        var rect = {{ x: wc.x - item.w / 2, y: wc.y - item.h, w: item.w, h: item.h }};
+        var overlap = placed.some(function(r) {{
+          return rect.x < r.x + r.w && rect.x + rect.w > r.x &&
+                 rect.y < r.y + r.h && rect.y + rect.h > r.y;
+        }});
+        if (!overlap) {{ placed.push(rect); show = true; }}
+      }}
+      if (item.entity.show !== show) item.entity.show = show;
+    }});
+  }}
+  viewer.camera.percentageChanged = 0.02;
+  viewer.camera.changed.addEventListener(updateLabelVisibility);
+
   async function renderPolygons(layer) {{
     if (!layer.geojson) return;
     var ds = await Cesium.GeoJsonDataSource.load(layer.geojson, {{
@@ -227,6 +331,8 @@ window.__GEOMIND_SPEC__ = {spec_json};
       var layer = spec.layers[i];
       if (layer.kind === 'points') renderPoints(layer);
       else if (layer.kind === 'gltf-model') renderModels(layer);
+      else if (layer.kind === 'labels') renderLabels(layer);
+      else if (layer.kind === 'polygon-outline') renderOutline(layer);
       else await renderPolygons(layer);
     }}
     if (spec.camera) {{
@@ -248,6 +354,7 @@ window.__GEOMIND_SPEC__ = {spec_json};
 
   // 初始渲染
   renderScene(window.__GEOMIND_SPEC__).then(function() {{
+    updateLabelVisibility();
     var s = window.__GEOMIND_SPEC__;
     var info = document.getElementById('sceneInfo');
     var layerDescs = s.layers.map(function(l) {{

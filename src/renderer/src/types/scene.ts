@@ -16,7 +16,13 @@ export interface FeatureCollection {
   features: GeoJsonFeature[]
 }
 
-export type LayerKind = 'polygon-fill' | 'polygon-extrusion' | 'points' | 'gltf-model'
+export type LayerKind =
+  | 'polygon-fill'
+  | 'polygon-extrusion'
+  | 'points'
+  | 'gltf-model'
+  | 'labels'
+  | 'polygon-outline'
 export type BasemapId = 'gaode' | 'osm' | 'arcgis-satellite'
 export type TerrainId = 'flat' | 'arcgis'
 
@@ -37,6 +43,12 @@ export interface SceneLayer {
   heightProperty?: string
   heightScale?: number
   pointSize?: number
+  /** labels：显示的字段列表（逐要素取值拼接），labelFontSize 为字号像素，labelUnit 追加在文字末尾 */
+  labelFields?: string[]
+  labelFontSize?: number
+  labelUnit?: string
+  /** polygon-outline：边界线宽（像素） */
+  width?: number
   /** gltf-model 图层 */
   url?: string
   position?: ModelPosition

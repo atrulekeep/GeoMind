@@ -15,7 +15,17 @@ class Session:
         self.history: list[dict[str, Any]] = []
 
     def commit(self, messages: list[dict[str, Any]]) -> None:
-        self.history = messages[1:][-HISTORY_LIMIT:]
+        hist = messages[1:][-HISTORY_LIMIT:]
+        # 盲取窗口可能把 assistant(tool_calls) 与其 tool 响应切开，
+        # 产生孤儿 tool 消息会让后续每轮请求 400（tool must follow tool_calls）
+        start = 0
+        while start < len(hist) and hist[start].get('role') == 'tool':
+            start += 1
+        hist = hist[start:]
+        # 步数用尽/异常中断时末尾可能是未被响应的 assistant.tool_calls，同样会导致 400
+        while hist and hist[-1].get('role') == 'assistant' and hist[-1].get('tool_calls'):
+            hist.pop()
+        self.history = hist
 
     def reset(self) -> None:
         self.history = []

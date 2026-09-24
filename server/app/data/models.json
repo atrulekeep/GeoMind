@@ -3,7 +3,10 @@
     {
       "id": "cesium_man",
       "name": "行走人物（CesiumMan）",
-      "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/Apps/SampleData/models/CesiumMan/Cesium_Man.glb",
+      "source": {
+        "type": "url",
+        "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/Apps/SampleData/models/CesiumMan/Cesium_Man.glb"
+      },
       "defaultScale": 1,
       "attribution": "CesiumGS/cesium Apps/SampleData, Apache-2.0",
       "description": "带骨骼行走动画的人物模型，适合在点位上展示"
@@ -11,7 +14,10 @@
     {
       "id": "ground_vehicle",
       "name": "地面车辆（GroundVehicle）",
-      "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/Apps/SampleData/models/GroundVehicle/GroundVehicle.glb",
+      "source": {
+        "type": "url",
+        "url": "https://raw.githubusercontent.com/CesiumGS/cesium/main/Apps/SampleData/models/GroundVehicle/GroundVehicle.glb"
+      },
       "defaultScale": 1,
       "attribution": "CesiumGS/cesium Apps/SampleData, Apache-2.0",
       "description": "带轮组的地面车辆 glb 模型"
@@ -19,10 +25,24 @@
     {
       "id": "box",
       "name": "立方体占位模型（Box）",
-      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Box/glTF-Binary/Box.glb",
+      "source": {
+        "type": "url",
+        "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Box/glTF-Binary/Box.glb"
+      },
       "defaultScale": 50,
       "attribution": "Khronos glTF-Sample-Assets, Model License",
       "description": "Khronos 官方 glTF 样例，可用作建筑体块/体量示意，默认 50 米"
+    },
+    {
+      "id": "cesium_drone",
+      "name": "四旋翼无人机（CesiumDrone，本地私有化）",
+      "source": {
+        "type": "local",
+        "path": "models/CesiumDrone.glb"
+      },
+      "defaultScale": 1,
+      "attribution": "CesiumGS/cesium Apps/SampleData, Apache-2.0",
+      "description": "Cesium 官方无人机模型，文件随仓库分发，经 sidecar /api/assets 本地加载，不依赖公网"
     }
   ]
 }

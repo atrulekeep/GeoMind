@@ -25,6 +25,7 @@ COPY server/app ./app
 COPY --from=web /build/out/renderer ./web
 
 ENV GEOMIND_WEB_DIR=/app/web \
+    GEOMIND_PUBLIC_BASE= \
     PYTHONUNBUFFERED=1
 EXPOSE 8765
 
