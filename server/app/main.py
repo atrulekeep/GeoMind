@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,10 +12,11 @@ from starlette.middleware.gzip import GZipMiddleware
 from .agent import APPROVALS, agent_events, run_agent
 from .export_html import generate_export_html
 from .config import load_settings
+from .gateway import create_gateway
 from .registry import DATA_DIR, DatasetRegistry
 from .session import Session
 
-app = FastAPI(title='GeoMind Sidecar', version='0.2.0')
+app = FastAPI(title='GeoMind Sidecar', version='0.3.0')
 
 # Electron 渲染端在 file:// / dev http://localhost 下访问，放开本地跨域
 app.add_middleware(
@@ -30,8 +31,9 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 settings = load_settings()
 registry = DatasetRegistry()
-# 桌面端单用户：一个会话承载多轮历史与当前场景
 session = Session()
+# 网关单例：所有 Agent 共享，统一 LLM 接入 / TraceID / Token 统计
+gateway = create_gateway(settings)
 
 
 class ChatBody(BaseModel):
@@ -42,6 +44,18 @@ class ApprovalBody(BaseModel):
     runId: str
     approved: bool
     reason: str | None = None
+
+
+def extract_user_id(request: Request) -> str:
+    """从请求 Header 提取用户标识
+
+    优先级：X-User-Id > Authorization(Bearer token 解析) > 'local'
+    桌面端单用户默认 'local'；多用户场景前端在 Header 中传 X-User-Id
+    """
+    uid = request.headers.get('X-User-Id')
+    if uid:
+        return uid.strip()
+    return 'local'
 
 
 @app.get('/health')
@@ -70,8 +84,12 @@ def approval(body: ApprovalBody) -> dict:
 
 
 @app.post('/api/chat')
-async def chat(body: ChatBody) -> dict:
-    reply, traces = await run_agent(body.message, settings, registry, session)
+async def chat(body: ChatBody, request: Request) -> dict:
+    user_id = extract_user_id(request)
+    reply, traces = await run_agent(
+        body.message, settings, registry, session,
+        gateway=gateway, user_id=user_id,
+    )
     return {
         'reply': reply,
         'traces': traces,
@@ -80,9 +98,13 @@ async def chat(body: ChatBody) -> dict:
 
 
 @app.post('/api/chat/stream')
-async def chat_stream(body: ChatBody):
+async def chat_stream(body: ChatBody, request: Request):
+    user_id = extract_user_id(request)
     async def event_source():
-        async for event in agent_events(body.message, settings, registry, session):
+        async for event in agent_events(
+            body.message, settings, registry, session,
+            gateway=gateway, user_id=user_id,
+        ):
             yield f"event: {event['type']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(
@@ -90,6 +112,18 @@ async def chat_stream(body: ChatBody):
         media_type='text/event-stream',
         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
     )
+
+
+@app.get('/api/gateway/stats')
+def gateway_stats() -> dict:
+    """网关统计：按 Agent 维度的 token / 调用次数 / 延迟"""
+    return gateway.stats()
+
+
+@app.get('/api/gateway/calls')
+def gateway_calls(limit: int = 50) -> dict:
+    """最近 LLM 调用记录"""
+    return {'calls': gateway.recent_calls(limit)}
 
 
 @app.get('/api/assets/{relative_path:path}')
